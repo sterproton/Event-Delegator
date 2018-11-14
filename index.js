@@ -1,60 +1,102 @@
-class EventDelegator{
-  
-  constructor(){
+class EventDelegate {
+  constructor() {
     this.ele = document.documentElement
+
+    /**
+     * {
+     *   'click' : {
+     *    'DOMRef' : []  //handlers
+     * }
+     * }
+     * 
+     */
     this.handlerStore = {
+
     }
-    // 针对一种事件，只需要对document绑定一次对应的事件
+
+
+    // document add one listener for a specific event
+    /**
+     * {
+     *  'click' : true
+     * }
+     */
     this.hasBind = {
     }
   }
 
-  storeHandlersByEventNameAndTrigerEle(eventName, trigerEle, handler, isCapture){
+  storeHandlersByEventNameAndTriggerEle(eventName, triggerEle, handler) {
     if (!this.handlerStore[eventName]) {
       this.handlerStore[eventName] = []
     }
-    const corresponsedHandlerData = this.handlerStore[eventName].filter(handlerData => handlerData.trigerEle === trigerEle)
-    if (corresponsedHandlerData.length === 0 ) {
+    const correspondedHandlerData = this.handlerStore[eventName].filter(handlerData => handlerData.triggerEle === triggerEle)
+    if (correspondedHandlerData.length === 0) {
       this.handlerStore[eventName].push({
-        trigerEle,
-        handlers:[{
-          handler,
-          isCapture,
-        }]
+        triggerEle,
+        handlers: [handler],
       })
-    } else{
-      corresponsedHandlerData[0].handlers.push({
-        handler,
-        isCapture,
-      })
+    } else {
+      correspondedHandlerData[0].handlers.push(handler)
     }
   }
 
-  getHandlersByEventNameAndTrigerEle(trigerEle, eventName){
-    const corresponsedHandlerData = this.handlerStore[eventName]
-    .filter(handlerData => handlerData.trigerEle === trigerEle)
-    if (corresponsedHandlerData.length !== 0) {
-      return corresponsedHandlerData[0].handlers
+  getHandlersByEventNameAndTriggerEle(triggerEle, eventName) {
+    const correspondedHandlerData = this.handlerStore[eventName]
+      .filter(handlerData => handlerData.triggerEle === triggerEle)
+    if (correspondedHandlerData.length !== 0) {
+      return correspondedHandlerData[0].handlers
     }
     return []
   }
 
-  addEventListener(trigerEle, eventName, handler, isCapture = false){
-    if (! trigerEle instanceof HTMLElement || typeof eventName !== 'string' || !handler instanceof Function) {
+  addEventListener(triggerEle, eventName, handler) {
+    if (!(triggerEle instanceof HTMLElement) || typeof eventName !== 'string' || !(handler instanceof Function)) {
       throw new Error('paramError')
     }
-    this.storeHandlersByEventNameAndTrigerEle(eventName, trigerEle, handler, isCapture)
+    this.storeHandlersByEventNameAndTriggerEle(eventName, triggerEle, handler)
     if (!this.hasBind[eventName]) {
       this.hasBind[eventName] = true
       this.ele.addEventListener(eventName, (e) => {
-        const handlers = this.getHandlersByEventNameAndTrigerEle(e.target, eventName)
+        const handlers = this.getHandlersByEventNameAndTriggerEle(e.target, eventName)
         if (handlers.length !== 0) {
-          handlers.forEach(handler => handler.handler(e))
+          handlers.forEach(handler => handler(e))
         }
-        e.stopPropagation()
       }, true)
     }
   }
 }
 
-const eventDelegator = new EventDelegator()
+
+
+// example
+
+const eventDelegate = new EventDelegate()
+
+document.documentElement.addEventListener('click',(e) => {
+  e.stopPropagation()
+})
+
+const inputElement = document.createElement('input')
+inputElement.type = 'text'
+inputElement.id = 'input'
+document.body.appendChild(inputElement)
+
+const inputEle = document.querySelector('#input')
+
+eventDelegate.addEventListener(inputEle, 'focus', () => {
+  console.log('focus')
+})
+
+eventDelegate.addEventListener(inputEle, 'focus', () => {
+  console.log('focus second handler')
+})
+
+eventDelegate.addEventListener(inputEle, 'blur', () => {
+  console.log('blur')
+  console.log('blur, input value = ', inputEle.value)
+})
+
+eventDelegate.addEventListener(inputEle, 'blur', (e) => {
+  console.log('blur second handler')
+  console.log('blur, input value = ', e.target.value)
+})
